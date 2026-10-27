@@ -70,4 +70,3 @@ class AuditEvent(Base):
     blood_bank_id: Mapped[int | None] = mapped_column(ForeignKey("blood_banks.id", ondelete="SET NULL"), index=True)
 
     actor: Mapped[User | None] = relationship()
-

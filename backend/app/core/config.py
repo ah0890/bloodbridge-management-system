@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     availability_fresh_days: int = 90
     whole_blood_deferral_days: int = 90
 
+    # Password applied to demo staff accounts by `seed-demo` (never used outside demo seeding).
+    demo_password: str | None = Field(default=None, repr=False)
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def _split_origins(cls, v: object) -> object:

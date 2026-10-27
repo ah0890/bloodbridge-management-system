@@ -2,6 +2,38 @@
 
 All notable changes to BloodBridge are recorded here. Dates are in YYYY-MM-DD format.
 
+## [Milestone 2] Relational models and synthetic demo data — 2026-10-27
+
+### Added
+- Migration `0002` adds 14 tables:
+  - `donors`, `donor_consents` (append-only ledger) and `donor_availability_changes`.
+  - `donations` and `contact_attempts`.
+  - `inventory_batches` (one status per lot) and `stock_movements` (immutable ledger).
+  - `blood_requests`, `request_status_changes`, `match_runs` and `match_results`.
+  - `notifications`, `dataset_imports` and `app_settings`.
+  - The tables use CHECK constraints (quantities, units, expiry after collection, coordinate ranges), foreign keys and indexes.
+- `services/compatibility.py`: explicit, versioned ABO/RhD tables for each component.
+  - Red cells and whole blood (ABO-identical) are handled separately from plasma and cryoprecipitate, where compatibility is reversed and RhD is ignored.
+  - ABO non-identical platelets are flagged "requires review" rather than accepted.
+- `services/lifecycle.py`: the request status transition graph. `FULFILLED` requires all units to be recorded; `PARTIALLY_FULFILLED` requires some.
+- Deterministic synthetic generator (`app/seed`). See the README section "Demo data".
+- `validate_dataset` consistency checker and the `validate-data` CLI command.
+- `seed-demo` CLI command:
+  - Refuses to run in production and refuses to mix with operational data.
+  - `--reset` removes synthetic rows only.
+  - The demo password comes from `BB_DEMO_PASSWORD` or is generated and printed once.
+- `/meta/data-status` now counts provenance across organisations, donors, requests and inventory.
+- `docs/DATA_SOURCES.md`: review of PBTA, opendata.com.pk and Safe Blood Transfusion Programme sources. None offers live inventory or clear reuse terms, so nothing is integrated.
+- Tests (42 backend in total):
+  - Seed consistency, reproducibility, provenance and unreachable contacts.
+  - Production, duplicate and mixing guards, and reset preserving real records.
+  - Validator detection and full-size targets.
+  - Compatibility tables and lifecycle rules.
+
+### Fixed
+- The generator no longer closes requests that are meant to stay open (caught by the lifecycle guard).
+- `BB_DEMO_PASSWORD` is now read through settings, so a value in `.env` works.
+
 ## [Milestone 1] Foundation and application shell — 2026-10-27
 
 ### Added

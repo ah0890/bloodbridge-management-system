@@ -18,11 +18,8 @@ The full product specification is the original task prompt, which isn't stored i
 ## Current status
 
 - **Milestone 1: Foundation.** Complete. Committed and pushed; see git log.
-- **Milestone 2: Models and synthetic data.** Next. Draft files already exist in the working tree but are **uncommitted and untested**:
-  - `backend/app/models/{donor,inventory,request,system}.py`
-  - `backend/app/seed/{reference,generator,validate}.py`
-  - `backend/app/services/{lifecycle,compatibility}.py`
-- **Milestone 3: Dashboard and donors.** Draft files exist but are uncommitted and untested:
+- **Milestone 2: Models and synthetic data.** Complete. Committed and pushed.
+- **Milestone 3: Dashboard and donors.** Next. Draft files exist but are uncommitted and untested:
   - `backend/app/services/{metrics,settings,csv_export}.py`
   - `backend/app/schemas/{common,donor}.py`
   - `backend/app/api/v1/{donors,dashboard}.py`
@@ -40,7 +37,10 @@ backend/
   app/db/base.py            Base, naming convention, UTCDateTime, TimestampMixin
   app/models/               ORM models; enums.py holds all domain enums (stored as constrained strings)
   app/services/audit.py     audit.record(...) — never pass donor PII in details
-  app/cli.py                migrate, create-user (seed-demo / validate-data arrive in Milestone 2)
+  app/cli.py                migrate, create-user, seed-demo, validate-data
+  app/seed/                 reference data, deterministic generator, validate_dataset
+  app/services/compatibility.py  ABO/RhD per-component rules (RULES_VERSION)
+  app/services/lifecycle.py      request status transitions
   migrations/               Alembic (render_as_batch for SQLite)
   tests/                    pytest; conftest builds schema via Alembic in a temp SQLite DB
 frontend/
@@ -63,6 +63,14 @@ frontend/
 - **Inventory model (Milestone 2 onwards):** `inventory_batches` hold lots with a single status each. A partial reserve or issue splits the batch. `stock_movements` is an immutable ledger.
 - **Python:** the venv uses Python 3.13. The 3.12 launcher entry on this machine points to a missing install.
 
+## Tests actually executed (Milestone 2)
+
+- Backend `pytest`: 42 passed (auth 12, seed 11, rules 19). `ruff check` passed on all committed backend files.
+- `seed-demo` on a scratch DB and on the local dev DB:
+  - 32 banks, 1,000 donors, 1,379 donations, 447 batches, 1,191 movements, 160 requests, 265 contact attempts.
+  - `validate_dataset` reported no problems.
+  - KPI sanity check: 321 currently available donors and 796 usable units; A−, B− and AB− stock is low, as expected.
+
 ## Tests actually executed (Milestone 1)
 
 - Backend: `pytest` gave 12 passed. `ruff check` passed on Milestone 1 files.
@@ -79,23 +87,17 @@ frontend/
 - The login rate limiter is in-process and doesn't work across multiple instances.
 - Starlette warns that `httpx` with `TestClient` is deprecated (it suggests `httpx2`). This is harmless for now.
 - Recharts 2.x is installed. npm flags it as no longer actively developed; consider moving to v3.
-- The local dev DB `backend/bloodbridge.db` (gitignored) contains a non-demo smoke-test admin. Delete the file before seeding demo data.
+- The local dev DB `backend/bloodbridge.db` (gitignored) is seeded with synthetic data. Recreate it with `seed-demo --reset`.
+- The seed doesn't create `match_runs`. Requests in `matches_found` have contact attempts but no stored match run until the Milestone 5 engine exists.
+- The data-source review (`docs/DATA_SOURCES.md`) found no live inventory and no clearly licensed directory. The CSV/JSON import is planned for Milestone 6.
 
 ## Next steps (exact)
 
-1. **Milestone 2:**
-   1. Export the new models from `app/models/__init__.py`.
-   2. Autogenerate migration `0002`.
-   3. Add CLI commands `seed-demo [--reset] [--seed N] [--anchor-date]` and `validate-data`. The seed must refuse when `BB_ENVIRONMENT=production` and refuse to mix with non-synthetic data. Staff passwords come from `BB_DEMO_PASSWORD`, or are generated and printed once.
-   4. Register every provenance-carrying model in `app/api/v1/meta.py` (`PROVENANCE_MODELS`).
-   5. Write seed tests: reproducibility for the same seed and anchor, `validate_dataset` returning no problems, counts within targets, and every record synthetic.
-   6. Write compatibility and lifecycle unit tests.
-   7. Research public data sources (official PK health department and blood transfusion authority sites). Record findings in the README; don't scrape.
-2. **Milestone 3:**
+1. **Milestone 3:**
    1. Wire the `donors` and `dashboard` routers.
    2. Build the dashboard page (Recharts, filters), the donor list, detail, form and edit pages, and global search.
    3. Add tests.
-3. **Milestones 4–6:** follow the spec. The README milestone table tracks scope.
+2. **Milestones 4–6:** follow the spec. The README milestone table tracks scope.
 
 ## Commands
 

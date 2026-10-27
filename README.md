@@ -13,7 +13,7 @@ Development proceeds in milestones. See [context.md](context.md) for current sta
 | Milestone | Scope | Status |
 |---|---|---|
 | 1 | Foundation, auth, app shell, design system | Complete |
-| 2 | Relational models and realistic synthetic data | Planned |
+| 2 | Relational models and realistic synthetic data | Complete |
 | 3 | Live dashboard, donor management | Planned |
 | 4 | Inventory and blood requests | Planned |
 | 5 | Donor matching, geographic availability | Planned |
@@ -104,6 +104,48 @@ Run all commands from `backend/` using the virtual environment's Python:
 The schema is always built with Alembic migrations, never `create_all`.
 
 To use PostgreSQL, create a database and set `BB_DATABASE_URL=postgresql+psycopg://user:password@host:5432/bloodbridge`.
+
+## Demo data (synthetic)
+
+```powershell
+# from backend/ — never run against production (the command refuses when BB_ENVIRONMENT=production)
+..\.venv\Scripts\python.exe -m app.cli seed-demo                # first time
+..\.venv\Scripts\python.exe -m app.cli seed-demo --reset        # replace synthetic data only
+..\.venv\Scripts\python.exe -m app.cli seed-demo --seed 42 --anchor-date 2026-10-27   # reproducible run
+..\.venv\Scripts\python.exe -m app.cli validate-data            # cross-table consistency checks
+```
+
+- **What it generates** (default seed):
+  - 15 Pakistani cities.
+  - 32 fictional organisations, all named "… (Demo)".
+  - 1,000 donors with consent ledgers and availability history.
+  - About 1,400 donations.
+  - About 450 inventory batches, with a full stock-movement ledger and transfers between cities.
+  - 160 requests with lifecycle histories.
+  - About 260 contact attempts.
+  - Notifications.
+  - Demo staff accounts: 1 admin, 4 coordinators and 8 bank managers.
+- **Reproducible:** the same `--seed` and `--anchor-date` always produce identical data. The anchor defaults to today, so the data always looks current.
+- **Visibly synthetic:**
+  - Every record has `provenance = synthetic` and shows a SYNTHETIC DEMO badge in the interface.
+  - A banner appears whenever synthetic data exists.
+  - CSV exports carry a header line saying the data is synthetic.
+- **Unreachable contact details:**
+  - Phones use the unallocated `+92-000-` prefix.
+  - Emails use the reserved `example.org` / `.example` domains.
+  - BloodBridge never sends messages.
+- **Safe to run:**
+  - Seeding refuses to mix synthetic data into a database that holds imported or verified records (override with `--allow-mixed`).
+  - `--reset` deletes only synthetic rows and `is_demo` accounts.
+- **Validated:** the run is checked by `validate-data` before it commits. The checks confirm that:
+  - Usable stock is screened.
+  - Each batch's status matches its movement ledger.
+  - `units_fulfilled` equals the units issued.
+  - Request histories follow the lifecycle.
+  - Allocated stock is ABO/RhD-compatible with its request.
+- **Demo passwords:** all demo accounts share the password in `BB_DEMO_PASSWORD` (environment or `.env`), or a random one printed once if it's unset. Accounts use the `@bloodbridge-demo.example` domain: `admin@…`, `coordinator1@…` to `coordinator4@…`, and `manager.demo-khi-01@…` etc.
+
+See [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) for the review of real public data sources and why none is integrated yet.
 
 ## Staff accounts
 

@@ -2,13 +2,13 @@ from fastapi import APIRouter
 from sqlalchemy import func, select
 
 from app.api.deps import DbSession
-from app.models import BloodBank
+from app.models import BloodBank, BloodRequest, Donor, InventoryBatch
 from app.models.enums import Provenance
 
 router = APIRouter(prefix="/meta", tags=["meta"])
 
-# Tables carrying a provenance column. Extended as models are added.
-PROVENANCE_MODELS: list = [BloodBank]
+# Primary operational tables carrying a provenance column.
+PROVENANCE_MODELS: list = [BloodBank, Donor, BloodRequest, InventoryBatch]
 
 
 @router.get("/data-status")
