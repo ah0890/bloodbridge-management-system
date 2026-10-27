@@ -1,0 +1,44 @@
+@import "./tokens.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-canvas text-ink font-sans antialiased text-sm;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary/60 ring-offset-1 ring-offset-surface;
+  }
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-surface border border-border rounded-md shadow-card;
+  }
+  .field-label {
+    @apply block text-xs font-medium text-ink-muted mb-1;
+  }
+  .input {
+    @apply block w-full h-9 rounded border border-border bg-surface px-3 text-sm text-ink placeholder:text-ink-subtle
+      focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:bg-canvas disabled:text-ink-subtle;
+  }
+  .input[aria-invalid="true"] {
+    @apply border-danger focus:ring-danger/20;
+  }
+  textarea.input {
+    @apply h-auto py-2;
+  }
+  .th {
+    @apply px-3 py-2 text-left text-2xs font-semibold uppercase tracking-wide text-ink-subtle whitespace-nowrap;
+  }
+  .td {
+    @apply px-3 py-2.5 align-middle text-sm text-ink;
+  }
+}
