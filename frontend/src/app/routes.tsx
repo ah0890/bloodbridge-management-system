@@ -1,5 +1,11 @@
 import { createBrowserRouter, type RouteObject } from "react-router-dom";
+import { BloodBankDetailPage, BloodBanksPage } from "@/pages/banks/BloodBanksPage";
+import { DashboardPage } from "@/pages/dashboard/DashboardPage";
+import { DonorDetailPage } from "@/pages/donors/DonorDetailPage";
+import { DonorFormPage } from "@/pages/donors/DonorFormPage";
+import { DonorsPage } from "@/pages/donors/DonorsPage";
 import { LoginPage } from "@/pages/LoginPage";
+import { SearchPage } from "@/pages/SearchPage";
 import { NotFoundPage, UnavailablePage } from "@/pages/UnavailablePage";
 import type { Permission } from "@/lib/types";
 import { AppLayout } from "./AppLayout";
@@ -18,12 +24,16 @@ export const routes: RouteObject[] = [
     path: "/",
     element: <AppLayout />,
     children: [
-      guarded("/", "dashboard:view", later("Overview", "Milestone 3")),
-      guarded("/donors/*", "donors:read", later("Donors", "Milestone 3")),
+      guarded("/", "dashboard:view", <DashboardPage />),
+      guarded("/donors", "donors:read", <DonorsPage />),
+      guarded("/donors/new", "donors:write", <DonorFormPage />),
+      guarded("/donors/:id", "donors:read", <DonorDetailPage />),
+      guarded("/donors/:id/edit", "donors:write", <DonorFormPage />),
       guarded("/inventory/*", "inventory:read", later("Blood Inventory", "Milestone 4")),
       guarded("/requests/*", "requests:read", later("Blood Requests", "Milestone 4")),
       guarded("/matching/*", "matching:run", later("Donor Matching", "Milestone 5")),
-      guarded("/blood-banks/*", "banks:read", later("Blood Banks", "Milestone 3")),
+      guarded("/blood-banks", "banks:read", <BloodBanksPage />),
+      guarded("/blood-banks/:id", "banks:read", <BloodBankDetailPage />),
       guarded("/geography", "geo:view", later("Geographic Availability", "Milestone 5")),
       guarded("/donations", "donations:read", later("Donations", "Milestone 4")),
       guarded("/reports", "reports:view", later("Reports & Analytics", "Milestone 6")),
@@ -31,7 +41,7 @@ export const routes: RouteObject[] = [
       guarded("/audit", "audit:read", later("Audit Logs", "Milestone 6")),
       guarded("/users", "users:manage", later("User Management", "Milestone 6")),
       guarded("/settings", "settings:manage", later("Settings", "Milestone 6")),
-      { path: "/search", element: later("Search", "Milestone 3") },
+      { path: "/search", element: <SearchPage /> },
       { path: "*", element: <NotFoundPage /> },
     ],
   },

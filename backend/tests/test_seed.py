@@ -119,3 +119,15 @@ def test_full_size_targets(db):
     assert 300 <= summary.inventory_batches <= 500
     assert 100 <= summary.requests <= 200
     assert validate_dataset(db) == []
+
+
+def test_no_generated_event_is_after_the_anchor(db):
+    from datetime import UTC, datetime
+
+    from app.models import RequestStatusChange
+
+    seed_demo(db, _cfg())
+    anchor = datetime(2026, 10, 27, tzinfo=UTC)
+    assert db.scalar(select(func.max(StockMovement.occurred_at))) < anchor
+    assert db.scalar(select(func.max(RequestStatusChange.changed_at))) < anchor
+    assert db.scalar(select(func.max(BloodRequest.submitted_at))) < anchor

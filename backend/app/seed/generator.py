@@ -156,7 +156,12 @@ class _Gen:
     def blood_group(self) -> BloodGroup:
         return BloodGroup(self.weighted(ref.BLOOD_GROUP_WEIGHTS))
 
+    def clamp(self, at: datetime) -> datetime:
+        """Keep generated events strictly before the anchor instant."""
+        return min(at, self.now - timedelta(minutes=self.rng.uniform(5, 90)))
+
     def move(self, batch: InventoryBatch, mtype: MovementType, frm, to, at: datetime, qty: int | None = None, **kw):
+        at = self.clamp(at)
         self.db.add(
             StockMovement(
                 batch_id=batch.id,
@@ -403,14 +408,14 @@ class _Gen:
         )
         self.db.add(b)
         self.db.flush()
-        received_at = datetime.combine(collected, time(10, 0), UTC) + timedelta(hours=self.rng.uniform(0, 8))
+        received_at = self.clamp(datetime.combine(collected, time(10, 0), UTC) + timedelta(hours=self.rng.uniform(0, 8)))
         b.created_at = received_at
         self.move(b, MovementType.RECEIVED, None, InventoryStatus.QUARANTINED, received_at, note="Received pending screening")
         self.summary.inventory_batches += 1
         return b
 
     def _release(self, b: InventoryBatch) -> datetime:
-        at = datetime.combine(b.collected_on, time(10, 0), UTC) + timedelta(hours=self.rng.uniform(20, 40))
+        at = self.clamp(datetime.combine(b.collected_on, time(10, 0), UTC) + timedelta(hours=self.rng.uniform(20, 40)))
         b.screening_status = ScreeningStatus.PASSED
         b.status = InventoryStatus.AVAILABLE
         self.move(
@@ -598,8 +603,11 @@ class _Gen:
         hospitals = [b for b in self.banks if b.org_type in (OrgType.HOSPITAL, OrgType.HOSPITAL_BLOOD_BANK)]
         specs = []
         for _ in range(self.cfg.requests):
-            recent = rng.random() < 0.22
-            submitted = self.days_ago(0.05, 9) if recent else self.days_ago(10, 180)
+            # Continuous arrivals over ~6 months, mildly skewed toward the present.
+            age_days = 0.05 + 180 * rng.random() ** 1.3
+            submitted = self.now - timedelta(days=age_days)
+            # Young requests are usually still open; older ones have reached an outcome.
+            recent = age_days < 2 or (age_days < 7 and rng.random() < 0.5)
             specs.append((submitted, recent))
         specs.sort(key=lambda s: s[0])
         for submitted, recent in specs:
@@ -625,7 +633,7 @@ class _Gen:
                 city=city,
                 hospital_name=hosp_name,
                 blood_bank_id=rng.choice(local_stock).id if local_stock else None,
-                required_by=submitted + timedelta(hours=rng.uniform(*lead)),
+                required_by=self._required_by(submitted, lead, recent),
                 priority=priority,
                 status=RequestStatus.SUBMITTED,
                 requester_name=self.person_name(),
@@ -663,6 +671,13 @@ class _Gen:
                     self.weighted({"fulfilled": 64, "closed_unfulfilled": 16, "cancelled": 14, "partially_fulfilled": 0})
                 )
             self._drive_request(req, target, local_stock)
+
+    def _required_by(self, submitted: datetime, lead: tuple[int, int], still_open: bool) -> datetime:
+        due = submitted + timedelta(hours=self.rng.uniform(*lead))
+        # Most open requests are still within their window; some have genuinely become overdue.
+        if still_open and due < self.now and self.rng.random() < 0.7:
+            due = self.now + timedelta(hours=self.rng.uniform(3, 72))
+        return due
 
     def _step(self, req: BloodRequest, to: RequestStatus, at: datetime, note: str, by: User | None = None) -> None:
         check_transition(req.status, to, units_fulfilled=req.units_fulfilled, units_required=req.units_required)

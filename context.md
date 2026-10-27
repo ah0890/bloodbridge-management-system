@@ -19,11 +19,9 @@ The full product specification is the original task prompt, which isn't stored i
 
 - **Milestone 1: Foundation.** Complete. Committed and pushed; see git log.
 - **Milestone 2: Models and synthetic data.** Complete. Committed and pushed.
-- **Milestone 3: Dashboard and donors.** Next. Draft files exist but are uncommitted and untested:
-  - `backend/app/services/{metrics,settings,csv_export}.py`
-  - `backend/app/schemas/{common,donor}.py`
-  - `backend/app/api/v1/{donors,dashboard}.py`
-- **Milestones 4–6:** not started.
+- **Milestone 3: Dashboard and donors.** Complete. Committed and pushed.
+- **Milestone 4: Inventory and requests.** Next.
+- **Milestones 5–6:** not started.
 
 ## Architecture and important paths
 
@@ -63,6 +61,14 @@ frontend/
 - **Inventory model (Milestone 2 onwards):** `inventory_batches` hold lots with a single status each. A partial reserve or issue splits the batch. `stock_movements` is an immutable ledger.
 - **Python:** the venv uses Python 3.13. The 3.12 launcher entry on this machine points to a missing install.
 
+## Tests actually executed (Milestone 3)
+
+- Backend `pytest`: 68 passed. `ruff check .` passed on the whole backend.
+- Frontend: `vitest` 12 passed, `tsc` clean, `vite build` succeeded. The bundle is about 480 kB minified (a chunk-size warning only).
+- Playwright screenshots (a scratch script outside the repo) of the dashboard, donors, donor detail, donor form, blood banks and search pages at 1440px, plus the dashboard and donors at 390px.
+  - No page-level horizontal overflow.
+  - The only console errors were the expected 401 from the session check before login and 404s from `/notifications/unread-count` (the endpoint arrives in Milestone 6).
+
 ## Tests actually executed (Milestone 2)
 
 - Backend `pytest`: 42 passed (auth 12, seed 11, rules 19). `ruff check` passed on all committed backend files.
@@ -87,17 +93,21 @@ frontend/
 - The login rate limiter is in-process and doesn't work across multiple instances.
 - Starlette warns that `httpx` with `TestClient` is deprecated (it suggests `httpx2`). This is harmless for now.
 - Recharts 2.x is installed. npm flags it as no longer actively developed; consider moving to v3.
-- The local dev DB `backend/bloodbridge.db` (gitignored) is seeded with synthetic data. Recreate it with `seed-demo --reset`.
+- The local dev DB `backend/bloodbridge.db` (gitignored) is seeded with synthetic data. Recreate it with `seed-demo --reset`; set `BB_DEMO_PASSWORD` in `.env` to choose the demo password.
+- `/notifications/unread-count` doesn't exist yet. The header bell quietly shows no count until Milestone 6.
+- The frontend bundle is a single chunk of about 480 kB. Consider route-level code splitting.
 - The seed doesn't create `match_runs`. Requests in `matches_found` have contact attempts but no stored match run until the Milestone 5 engine exists.
 - The data-source review (`docs/DATA_SOURCES.md`) found no live inventory and no clearly licensed directory. The CSV/JSON import is planned for Milestone 6.
 
 ## Next steps (exact)
 
-1. **Milestone 3:**
-   1. Wire the `donors` and `dashboard` routers.
-   2. Build the dashboard page (Recharts, filters), the donor list, detail, form and edit pages, and global search.
-   3. Add tests.
-2. **Milestones 4–6:** follow the spec. The README milestone table tracks scope.
+1. **Milestone 4: Inventory and requests.**
+   1. Inventory API. Add batches (received → quarantined); release after screening passes or discard on failure. Reserve or issue partial quantities by splitting the batch inside a transaction, using a conditional `UPDATE ... WHERE status='available' AND quantity>=n` with a rowcount check. Also cover releasing reservations, transfers (a `transfer_out` row plus a new batch at the destination), expiry write-off, the movement ledger, and manager org isolation through `ensure_org_access`.
+   2. Requests API. Public submission (rate-limited, consent required, with a confirmation code and a public status lookup that returns no PII) and staff submission. Enforce the lifecycle through `services/lifecycle.check_transition`, plus assignment, a status history, and fulfilment derived from issued units (`units_fulfilled`). Cancellation.
+   3. Frontend pages: inventory list and detail with actions; requests list, detail (timeline, reserve and issue from compatible stock) and form; and the public portal at `/public` (request form, confirmation, emergency guidance, public availability as aggregate counts by city and group with no PII).
+   4. Donations page: record a donation, which creates a quarantined batch and updates the donor's `last_donation_date`.
+   5. Tests: race and duplicate issuance, unusable-stock issuance rejected, transitions, and permissions.
+2. **Milestones 5–6:** follow the spec. Matching uses `services/compatibility.py`; reports, notifications, audit UI, users, settings, imports and Playwright E2E are in Milestone 6.
 
 ## Commands
 
@@ -118,7 +128,9 @@ npm run dev; npm test; npm run typecheck; npm run build
 ## Git
 
 - Branch `main`, remote `origin` → github.com/ah0890/bloodbridge-management-system.
-- The user confirmed the commit identity `Ahaulakh0890 <Ahaulakh9800@gmail.com>` and authorised a push after each milestone. Never force-push.
+- The user confirmed the commit identity `Ahaulakh0890 <Ahaulakh9800@gmail.com>` and authorised a push after each milestone.
+- **The user does not want Claude attribution.** Never add `Co-Authored-By: Claude` or "Generated with Claude Code" lines. On 2026-10-27 the Milestone 1 and 2 commits were rewritten without the trailer (trees unchanged) and force-pushed with lease, with the user's explicit approval: Milestone 1 is now `5c9d944` and Milestone 2 is `7ba18d9`.
+- Otherwise never force-push.
 
 ## Privacy, provenance and security notes
 

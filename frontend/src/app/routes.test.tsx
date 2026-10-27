@@ -54,7 +54,7 @@ describe("route protection", () => {
 
   it("shows only permitted navigation items for a bank manager", async () => {
     mockApi(session("bank_manager", ["dashboard:view", "inventory:read", "requests:read", "audit:read"]));
-    renderAt("/");
+    renderAt("/search");
     const nav = await screen.findByRole("complementary", { name: "Primary navigation" });
     expect(nav).toHaveTextContent("Blood Inventory");
     expect(nav).toHaveTextContent("Audit Logs");
@@ -70,7 +70,7 @@ describe("route protection", () => {
 
   it("shows the synthetic data banner in demo mode", async () => {
     mockApi(session("admin", ["dashboard:view"]));
-    renderAt("/");
+    renderAt("/search");
     expect(await screen.findByText(/SYNTHETIC DEMO DATA/)).toBeInTheDocument();
   });
 });

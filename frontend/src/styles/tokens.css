@@ -32,15 +32,14 @@
   --demo: 109 40 217;       /* violet marks SYNTHETIC DEMO DATA everywhere */
   --demo-soft: 243 237 255;
 
-  /* Chart palette (ordered, colour-blind aware) */
+  /* Chart palette: fixed order, validated (lightness, chroma, CVD, contrast) with the dataviz validator.
+     Red is reserved for blood/urgency semantics and is never a series colour. */
   --chart-1: #1f4e9c;
-  --chart-2: #c0392b;
-  --chart-3: #2e8b57;
-  --chart-4: #d4880f;
-  --chart-5: #6d4bc2;
-  --chart-6: #138a9c;
-  --chart-7: #8c5a3c;
-  --chart-8: #5f6b7a;
+  --chart-2: #b8730a;
+  --chart-3: #6d4bc2;
+  --chart-4: #2e8b57;
+  --chart-grid: #e6e9ee;
+  --chart-axis: #64748b;
 
   --sidebar-width: 15rem;
   --sidebar-collapsed: 4rem;

@@ -2,6 +2,41 @@
 
 All notable changes to BloodBridge are recorded here. Dates are in YYYY-MM-DD format.
 
+## [Milestone 3] Live dashboard and donor management — 2026-10-27
+
+### Added
+- `services/metrics.py`: single definitions for every KPI (usable stock, currently available donors, active, critical or overdue, expiring, fulfilled in period).
+- `services/settings.py`: operational thresholds come from env defaults and can be overridden in `app_settings`.
+- Dashboard API (`/dashboard/summary`, `/inventory-health`, `/requests`, `/activity`, `/cities`):
+  - Filters for date range, city, blood group, blood bank, request status and provenance.
+  - Bank managers are confined to their own organisation on the server.
+- Donor API:
+  - List with search, filters, sorting and pagination. The list never returns contact details.
+  - Detail view: contact details and notes only for roles with `donors:contact`, and each view is audited.
+  - Create with mandatory consent, a consent ledger and availability history, plus edit.
+  - Availability updates (refused without consent) and consent withdraw/renew (withdrawal marks the donor unavailable).
+  - Contact-attempt recording, which never sends anything.
+  - Deactivate/reactivate, and admin-only irreversible anonymisation that keeps history.
+  - Minimised CSV export, labelled when synthetic and protected against formula injection.
+- `/blood-banks` (list and detail) and `/search` (permission-aware, no contact details).
+- Records created by demo staff accounts are labelled synthetic (`record_provenance`).
+- Frontend:
+  - Operations dashboard: 8 KPI cards with definitions, URL-synced filters, stock-by-group bar chart with low-stock reference line, requests trend chart, priority bars, inventory health, awaiting-coordination and critical lists, city availability table and activity feed.
+  - The chart palette was validated for colour-vision deficiency and contrast, and every chart has a table view.
+  - Donor list, detail and form pages (React Hook Form + Zod), a blood bank directory and detail page, and a global search page.
+- Tests:
+  - Backend: 26 new (68 in total), covering donor CRUD and validation, permissions, PII hiding, consent rules, anonymisation, export safety, KPI definitions, manager scoping and search permissions.
+  - Frontend: 8 new (12 in total), covering dashboard data, error and filter behaviour, donor list pagination, empty state, form validation, server errors and role-specific actions.
+- Visual check with Playwright screenshots at desktop (1440px) and mobile (390px) widths. There's no page-level horizontal overflow, and wide tables scroll inside their cards.
+
+### Fixed
+- Synthetic event times are clamped before the anchor instant, so nothing is timestamped in the future.
+- The request generator now produces continuous arrivals; open versus closed status depends on age, and most open requests are within their deadline.
+- The donor list's `active` filter supports `true`, `false` and `all`.
+
+### Changed
+- Chart animations are disabled to keep the operational views calm and avoid animation the spec doesn't need.
+
 ## [Milestone 2] Relational models and synthetic demo data — 2026-10-27
 
 ### Added

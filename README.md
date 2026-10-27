@@ -14,7 +14,7 @@ Development proceeds in milestones. See [context.md](context.md) for current sta
 |---|---|---|
 | 1 | Foundation, auth, app shell, design system | Complete |
 | 2 | Relational models and realistic synthetic data | Complete |
-| 3 | Live dashboard, donor management | Planned |
+| 3 | Live dashboard, donor management | Complete |
 | 4 | Inventory and blood requests | Planned |
 | 5 | Donor matching, geographic availability | Planned |
 | 6 | Reports, notifications, audit, security and QA | Planned |
@@ -168,6 +168,20 @@ cd frontend; npm test; npm run typecheck; npm run build
 ## API documentation
 
 With the backend running in a non-production environment, open <http://127.0.0.1:8000/docs> (Swagger UI) or `/openapi.json`. Docs are disabled by default when `BB_ENVIRONMENT=production`.
+
+## Metric definitions
+
+Every number on the dashboard is computed live from the database by `backend/app/services/metrics.py`, the single definition used everywhere.
+
+- **Usable units:** status *available*, screening *passed*, in date, at an active organisation. Quarantined, reserved, issued, expired, discarded and transferred stock is excluded.
+- **Currently available donors:** all of the following hold. This is an operational indicator, not medical eligibility.
+  - Consent is granted.
+  - Availability was confirmed within `BB_AVAILABILITY_FRESH_DAYS`.
+  - The donor hasn't donated within `BB_WHOLE_BLOOD_DEFERRAL_DAYS`.
+- **Active requests:** any non-terminal status. **Critical or overdue:** active requests with critical priority, or past their required-by time.
+- **Expiring soon:** usable units expiring within `BB_EXPIRY_WARNING_DAYS`. **Low stock:** a blood group below `BB_LOW_STOCK_UNITS` usable units.
+
+Bank managers always see their own organisation's figures; the server enforces this regardless of the filters sent.
 
 ## Known limitations
 
